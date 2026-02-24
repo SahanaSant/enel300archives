@@ -1,0 +1,11 @@
+import machine
+import utime
+
+yAxis = machine.ADC(27)
+xAxis = machine.ADC(26)
+
+while True:
+    xVal = xAxis.read_u16()
+    yVal = yAxis.read_u16()
+    print(xAxis.read_u16(), yAxis.read_u16())
+    utime.sleep(0.5)
