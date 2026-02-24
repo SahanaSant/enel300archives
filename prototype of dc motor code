@@ -1,0 +1,201 @@
+from machine import Pin, PWM, ADC
+from time import sleep
+from hcsr04 import HCSR04 # Must have this library saved on Pico to work
+from servo import Servo # Save this file on pico
+# === L298N Motor Driver ===
+# Motor A
+motor_a_in1 = Pin(28, Pin.OUT)
+motor_a_in2 = Pin(27, Pin.OUT)
+motor_a_en = PWM(Pin(26))
+motor_a_en.freq(1000)
+motor_a_correction = 1.0 # Adjust so both motors have same speed
+
+# Motor B
+motor_b_in3 = Pin(13, Pin.OUT)
+motor_b_in4 = Pin(14, Pin.OUT)
+motor_b_en = PWM(Pin(15))
+motor_b_en.freq(1000)
+motor_b_correction = 1.0 # Adjust so both motors have same speed
+
+# Servo setup
+sg90 = Servo(Pin(22))
+sg69 = Servo(Pin(18))
+
+# IR sensor setup
+ir = ADC(28)
+
+# Ultrasonic sensor setup
+sensor_left = HCSR04(trigger_pin=21, echo_pin=20)
+sensor_front = HCSR04(trigger_pin=9, echo_pin=8)
+
+# Reed switch setup
+reed_switch = Pin(0, Pin.IN, Pin.PULL_DOWN)
+
+# Function to control Motor A
+def motor_a(direction = "stop", speed = 0):
+    adjusted_speed = int(speed * motor_a_correction)  # Apply correction
+    if direction == "forward":
+        motor_a_in1.value(0)
+        motor_a_in2.value(1)
+    elif direction == "backward":
+        motor_a_in1.value(1)
+        motor_a_in2.value(0)
+    else:  # Stop
+        motor_a_in1.value(0)
+        motor_a_in2.value(0)
+    motor_a_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
+
+# Function to control Motor B
+def motor_b(direction = "stop", speed = 0):
+    adjusted_speed = int(speed * motor_b_correction)  # Apply correction
+    if direction == "forward":
+        motor_b_in3.value(1)
+        motor_b_in4.value(0)
+    elif direction == "backward":
+        motor_b_in3.value(0)
+        motor_b_in4.value(1)
+    else:  # Stop
+        motor_b_in3.value(0)
+        motor_b_in4.value(0)
+    motor_b_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
+
+def navigate(IRmethod=True):
+    timer = 0
+    while True:
+    #    try:
+            distance_left = sensor_left.distance_cm()
+            distance_front = sensor_front.distance_cm()
+            print('Left:', distance_left, 'cm')
+            print('Front:', distance_front, 'cm')
+            left_correction = 10.2 - distance_left
+            front_correction = distance_front - 20
+
+            if IRmethod == True and ir.read_u16() > 35000:
+                motor_a()
+                motor_b()
+                break
+            if timer > 5 and distance_front < 45 and IRmethod == False:
+                motor_a()
+                motor_b()
+                break
+            elif distance_front < 11 and distance_front > 0: # Sometimes front bugs out, reads negative numbers because of shade
+                motor_a("forward", 10)
+                motor_b("forward", 40)
+                print("Turning Right")
+                sleep(0.70)
+                timer+= 0.70
+            elif distance_left < 10 and distance_left > 0:
+                motor_a("forward", 30 - left_correction*1.2)
+                motor_b("forward", 40)
+                print("Banking Right")
+                print(20 - left_correction*0.75)
+            elif distance_left > 10.2 and distance_left < 25:
+                motor_b("forward", abs(30 + left_correction))
+                motor_a("forward", 40)
+                print("Banking Left")
+                print(abs(20 + left_correction*2))
+            elif distance_left > 11 or distance_left < 0:
+                motor_a("forward", 40)
+                motor_b("forward", 20)
+                print("Banking Left")
+            else:
+                motor_a("forward", 38)
+                motor_b("forward", 40)
+                print("Moving forward")
+            sleep(0.1) # sensor doesn't work well without delay
+            timer += 0.1
+            print(ir.read_u16())
+            print(reed_switch.value())
+    #    except OSError as ex:
+    #        print('ERROR getting distance:', ex)
+    #        break
+
+
+# Turn 180 (make sensor face wall)
+motor_b("backward", 40)
+motor_a("forward", 38)
+sleep(0.9)
+motor_a()
+motor_b()
+
+
+for i in range(1):
+    # Navigate to top IR
+    navigate()
+    sleep(2)
+    # Navigate to far wall
+    navigate(False)
+
+    # Turn 90 right
+    motor_a("backward", 0)
+    motor_b("forward", 40)
+    sleep(0.9)
+    motor_a()
+    motor_b()
+
+    # Travel 24 inches
+    motor_a("forward", 38)
+    motor_b("forward", 40)
+    sleep(2.6)
+    motor_a()
+    motor_b()
+
+    # Turn 90 right (make forklift face cargo)
+    motor_a("backward", 0)
+    motor_b("forward", 40)
+    sleep(0.9)
+    motor_a()
+    motor_b()
+
+    # Don't need to approach cargo, can move cargo to rover!!
+    while reed_switch.value() != 1:
+        sg69.move(180)
+        sg90.move(0) # move to 0 degree postion
+        sleep(0.1)
+    else:
+        sg69.move(95)
+        sg90.move(85) # move to 90 degree position
+
+
+    # Turn 90 left (make sensor face wall)
+    motor_b("backward", 40)
+    motor_a("forward", 38)
+    sleep(0.60)
+    motor_a()
+    motor_b()
+
+    while distance_front > 11:
+        motor_a("forward", 38)
+        motor_b("forward", 40)
+        sleep(0.1)
+
+    navigate()
+
+    # Turn 90 left (make forklift face away from wall)
+    motor_b("backward", 40)
+    motor_a("forward", 38)
+    sleep(0.60)
+    motor_a()
+    motor_b()
+
+    # John Cena the cargo
+    sg69.move(180)
+    sg90.move(0) # move to 0 degree postion
+
+    # Get out of the way
+    motor_a("forward", 38)
+    motor_b("forward", 40)
+    sleep(0.5)
+
+    # Turn 90 right
+    motor_a("backward", 0)
+    motor_b("forward", 40)
+    sleep(0.9)
+    motor_a()
+    motor_b()
+
+    # Approach wall
+    while distance_front > 11:
+        motor_a("forward", 38)
+        motor_b("forward", 40)
+        sleep(0.1)
