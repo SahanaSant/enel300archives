@@ -1,0 +1,125 @@
+from machine import I2C, Pin
+from pico_i2c_lcd import I2cLcd
+import time
+
+
+# Ultrasonic sensor (HC-SR04 style)
+trig = Pin(0, Pin.OUT)  # Can modify these pin numbers
+echo = Pin(1, Pin.IN)
+trig.low()
+
+# LCD display
+i2c = I2C(0, sda=Pin(4), scl=Pin(5))  # Can modify these pin numbers
+lcd = I2cLcd(i2c, 0x27, 2, 16)
+
+
+# Accuracy / stability tuning
+# HC-SR04 is not truly "ultra accurate", but these settings make it much more stable.
+AIR_TEMP_C = 20.0  # Update if you know the room temperature
+SPEED_CM_PER_US = (331.3 + 0.606 * AIR_TEMP_C) / 10000.0
+SENSOR_OFFSET_CM = 0.0  # Optional fixed offset for your mounting geometry
+
+MIN_DISTANCE_CM = 2.0
+MAX_DISTANCE_CM = 400.0
+ECHO_TIMEOUT_US = 30000
+
+SAMPLES_PER_READING = 7
+INTER_SAMPLE_MS = 60
+DISPLAY_SMOOTH_ALPHA = 0.35
+
+
+def write_lcd(line1, line2):
+    lcd.move_to(0, 0)
+    lcd.putstr(line1.ljust(16)[:16])
+    lcd.move_to(0, 1)
+    lcd.putstr(line2.ljust(16)[:16])
+
+
+def trigger_ultrasonic():
+    trig.low()
+    time.sleep_us(3)
+    trig.high()
+    time.sleep_us(10)
+    trig.low()
+
+
+def measure_echo_pulse_us():
+    trigger_ultrasonic()
+
+    wait_start = time.ticks_us()
+    while echo.value() == 0:
+        if time.ticks_diff(time.ticks_us(), wait_start) > ECHO_TIMEOUT_US:
+            return None
+
+    pulse_start = time.ticks_us()
+    while echo.value() == 1:
+        if time.ticks_diff(time.ticks_us(), pulse_start) > ECHO_TIMEOUT_US:
+            return None
+
+    pulse_end = time.ticks_us()
+    return time.ticks_diff(pulse_end, pulse_start)
+
+
+def measure_distance_once_cm():
+    pulse_us = measure_echo_pulse_us()
+    if pulse_us is None:
+        return None
+
+    distance_cm = (pulse_us * SPEED_CM_PER_US) / 2.0
+    distance_cm += SENSOR_OFFSET_CM
+
+    if distance_cm < MIN_DISTANCE_CM or distance_cm > MAX_DISTANCE_CM:
+        return None
+    return distance_cm
+
+
+def get_distance():
+    readings = []
+
+    for _ in range(SAMPLES_PER_READING):
+        value = measure_distance_once_cm()
+        if value is not None:
+            readings.append(value)
+        time.sleep_ms(INTER_SAMPLE_MS)
+
+    if len(readings) < 3:
+        return None
+
+    readings.sort()
+
+    # Trim a low and high outlier when enough samples exist.
+    if len(readings) >= 5:
+        core = readings[1:-1]
+    else:
+        core = readings
+
+    median = core[len(core) // 2]
+    band = max(1.0, median * 0.05)  # +/-1 cm minimum, wider band at long range
+    filtered = [v for v in core if abs(v - median) <= band]
+    if not filtered:
+        filtered = core
+
+    return sum(filtered) / len(filtered)
+
+
+display_distance = None
+write_lcd("Distance (cm)", "Starting...")
+time.sleep_ms(200)
+
+while True:
+    output = get_distance()
+
+    if output is None:
+        write_lcd("Distance (cm)", "No echo / range")
+        continue
+
+    if display_distance is None:
+        display_distance = output
+    else:
+        # Smooth the display value to reduce flicker while preserving movement.
+        display_distance = (
+            DISPLAY_SMOOTH_ALPHA * output
+            + (1.0 - DISPLAY_SMOOTH_ALPHA) * display_distance
+        )
+
+    write_lcd("Distance (cm)", "{:6.2f} cm".format(display_distance))
