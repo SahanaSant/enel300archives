@@ -1,0 +1,43 @@
+    #Planning to modify this 
+from machine import Pin, ADC, UART, I2C
+import utime
+import time
+
+uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
+
+uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
+
+if uart.any():
+    data = uart.readline()
+    if data:
+        incoming = data.decode('utf-8').strip()
+        print("Slave recived", incoming)
+
+        valid = ( #Check if theres a comma for valid input.
+            #If incoming has a comma then it is valid and we can continue, otherwise mov eto failed if statement     
+            incoming == "press"
+            or incoming == "center"
+            or "left" in incoming
+            or "right" in incoming
+            or "up" in incoming
+            or "down" in incoming
+        )
+
+        if valid:
+            print("slave responding, Pong")
+            uart.write(f"{act}\n")
+            num = 1
+
+        if num == 0:
+            print("fail")
+            uart.write("fail\n")
+    
+time.sleep(0.5)
+
+if uart2.any():
+    data = uart2.readline()
+    print("Master recived", data.decode('utf-8').strip())
+    
+print("---")
+
+time.sleep(2)
