@@ -49,7 +49,7 @@ while True:
     buttonVal = button.value()
     
     act = ""
-    
+    # need to create new act variable for y axis
     if xVal <=600:
         act = ("left")
     if xVal >=60000:
