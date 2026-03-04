@@ -3,31 +3,39 @@ from machine import Pin, ADC, UART, I2C
 import utime
 import time
 
-uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
+uart = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
 
-uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9)) # This is
+#uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9)) # This is for 
 
-if uart.any():
-    data = uart.readline()
-    if data:
-        incoming = data.decode('utf-8').strip()
-        print("Slave recived", incoming)
-
-    parts = incoming.split(',')
-    
-    if len(parts) == 2 and all(p.strip().isdigit() for p in parts):
-        print("slave responding, Pong")
-        xVal, yVal = map(int, parts) # Converts each result into an int, very pythonic!
-        uart.write(f"{xVal},{yVal}\n")
+while True:
+    if uart.any():
+        data = uart.readline()
+        if data:
+            incoming = data.decode('utf-8').strip()
+            print("Slave recived", incoming)
+            if (incoming == "pressed"):
+                print("LED ON.\n")    
+            else:
+                parts = incoming.split(',')
+                if len(parts) == 2 and all(p.strip().isdigit() for p in parts): #If everything is number then map it
+                    print("slave responding, Pong")
+                    xVal, yVal = map(int, parts) # Converts each result into an int, very pythonic!
+                    uart.write(f"{xVal},{yVal}\n")
+                else:
+                    print("fail")
+                    uart.write("fail\n")
+                    break
     else:
-        print("fail")
-        uart.write("fail\n")
+        print("Smthg happened lol\n")
     
 time.sleep(0.5)
 
-if uart2.any():
+'''if uart2.any():
     data = uart2.readline()
     print("Master recived", data.decode('utf-8').strip())
+
+'''
+
     
 print("---")
 
