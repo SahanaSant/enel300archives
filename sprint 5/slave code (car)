@@ -12,9 +12,10 @@ while True:
         data = uart.readline()
         if data:
             incoming = data.decode('utf-8').strip()
-            print("Slave recived", incoming)
+            print("Slave recieved", incoming)
             if (incoming == "pressed"):
-                print("LED ON.\n")    
+                print("LED ON.\n")
+                #Code for enabling GPIO pin for light generation.     
             else:
                 parts = incoming.split(',')
                 if len(parts) == 2 and all(p.strip().isdigit() for p in parts): #If everything is number then map it

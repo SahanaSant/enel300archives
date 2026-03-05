@@ -64,13 +64,13 @@ while True:
 
     #Prepare to send this data to the HC-05. 
     if buttonVal == 0:
-        act = "press"
+        act = "press\n"
     elif xDir and yDir: #If slightly turning
-        act = f"{xVal},{yVal}"
+        act = f"{xVal},{yVal}\n"
     elif xDir: #if going horizontally
-        act = f"{xVal},0"
+        act = f"{xVal},0\n"
     elif yDir: # if going only straight
-        act = f"0,{yVal}"
+        act = f"0,{yVal}\n"
     else:
         act = "0,0"
     utime.sleep(0.1)
