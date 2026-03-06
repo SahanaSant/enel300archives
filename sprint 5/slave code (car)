@@ -3,6 +3,13 @@ from machine import Pin, ADC, UART, I2C
 import utime
 import time
 
+#Variables needed
+    #Raw adc values
+    #Joystick values
+    #Need to calculte deadzone from calibration
+    #minimum pwm, maximum pwm. 
+
+
 uart = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
 
 #uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9)) # This is for 
@@ -20,6 +27,7 @@ while True:
                 parts = incoming.split(',')
                 if len(parts) == 2 and all(p.strip().isdigit() for p in parts): #If everything is number then map it
                     print("slave responding, Pong")
+                    print(f'{parts}\n')
                     xVal, yVal = map(int, parts) # Converts each result into an int, very pythonic!
                     uart.write(f"{xVal},{yVal}\n")
                 else:

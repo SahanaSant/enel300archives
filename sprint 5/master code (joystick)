@@ -1,18 +1,13 @@
 from machine import Pin, ADC, UART, I2C
 import utime
 import time
-
 uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
-
 uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
-
 xm= ADC(Pin(26))
 ym= ADC(Pin(27))
 button = Pin(22,Pin.IN, Pin.PULL_UP)
-
 """
 slave_add = "2025,08,004BEC"
-
 def send_at(command):
     uart.write(command + '\r\n')
     time.sleep(0.1)
@@ -30,18 +25,14 @@ send_at('AT+ORGL')
 send_at('AT+ROLE=0')
 send_at('AT+ADDR?')
 print("Done")
-
 print("config mas")
 send_at2('AT+ORGL')
 send_at2('AT+ROLE=1')
 send_at2('AT+CMODE=0')
 send_at2('AT+BIND=' + slave_add)
 print("mas done")
-
-
 """
 #Test Code
-
 while True:
     
     xVal  = xm.read_u16()
@@ -50,18 +41,15 @@ while True:
     
     xDir = ""
     yDir = ""
-
     #Condition to check left/right/or both
     if xVal <= 600:
         xDir = "left"
     elif xVal >= 60000:
         xDir = "right"
-
     if yVal <= 600:
         yDir = "up"
     elif yVal >= 60000:
         yDir = "down"
-
     #Prepare to send this data to the HC-05. 
     if buttonVal == 0:
         act = "press\n"

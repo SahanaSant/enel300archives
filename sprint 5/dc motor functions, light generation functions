@@ -1,0 +1,68 @@
+from machine import Pin, ADC, UART
+import utime
+# One Pico, two HC-05 modules.
+# HC-05 A -> UART0 on pins TX=16 RX=17
+# HC-05 B -> UART1 on pins TX=8 RX=9
+hc05_a = UART(0, baudrate=9600, tx=Pin(16), rx=Pin(17))
+hc05_b = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+x_axis = ADC(Pin(26))
+y_axis = ADC(Pin(27))
+button = Pin(22, Pin.IN, Pin.PULL_UP)
+# Keep thresholds close to your previous logic.
+LOW_EDGE = 600
+HIGH_EDGE = 60000
+def build_command():
+    x_val = x_axis.read_u16()
+    y_val = y_axis.read_u16()
+    button_val = button.value()
+    x_dir = ""
+    y_dir = ""
+    
+    if x_val <= LOW_EDGE:
+        x_dir = "left"
+    elif x_val >= HIGH_EDGE:
+        x_dir = "right"
+    if y_val <= LOW_EDGE:
+        y_dir = "up"
+    elif y_val >= HIGH_EDGE:
+        y_dir = "down"
+        
+    if button_val == 0:
+        return "press"
+    
+    if x_dir and y_dir:
+        return "{},{}".format(x_val, y_val)
+    if x_dir:
+        return "{},0".format(x_val)
+    if y_dir:
+        return "0,{}".format(y_val)
+    return "0,0"
+
+def send_line(uart_obj, payload):
+    uart_obj.write(payload + "\n")
+    
+def read_line(uart_obj):
+    if not uart_obj.any():
+        return None
+    data = uart_obj.readline()
+    if not data:
+        return None
+    try:
+        return data.decode("utf-8").strip()
+    except Exception:
+        return None
+    
+while True:
+    act = build_command()
+    # Send the same command to both HC-05 links.
+    send_line(hc05_a, act)
+    send_line(hc05_b, act)
+    
+    print("TX:", act)
+    rx_a = read_line(hc05_a)
+    if rx_a:
+        print("RX_A:", rx_a)
+    rx_b = read_line(hc05_b)
+    if rx_b:
+        print("RX_B:", rx_b)
+    utime.sleep_ms(120)
