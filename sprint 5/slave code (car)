@@ -1,4 +1,4 @@
-    #Planning to modify this 
+  #Planning to modify this 
 from machine import Pin, ADC, UART, I2C
 import utime
 import time

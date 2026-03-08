@@ -1,0 +1,95 @@
+from machine import Pin, ADC, UART
+import utime
+
+# One Pico, two HC-05 modules.
+# HC-05 A -> UART0 on pins TX=16 RX=17
+# HC-05 B -> UART1 on pins TX=8 RX=9
+hc05_a = UART(0, baudrate=9600, tx=Pin(16), rx=Pin(17))
+hc05_b = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
+
+x_axis = ADC(Pin(26))
+y_axis = ADC(Pin(27))
+button = Pin(22, Pin.IN, Pin.PULL_UP)
+
+LOW_EDGE = 600
+HIGH_EDGE = 60000
+
+
+def build_command():
+    x_val = x_axis.read_u16()
+    y_val = y_axis.read_u16()
+    button_val = button.value()
+
+    x_dir = ""
+    y_dir = ""
+
+    if x_val <= LOW_EDGE:
+        x_dir = "left"
+    elif x_val >= HIGH_EDGE:
+        x_dir = "right"
+
+    if y_val <= LOW_EDGE:
+        y_dir = "up"
+    elif y_val >= HIGH_EDGE:
+        y_dir = "down"
+
+    if button_val == 0:
+        act = "press"
+        direction = "press"
+    elif x_dir and y_dir:
+        act = "{},{}".format(x_val, y_val)
+        direction = "{}+{}".format(x_dir, y_dir)
+    elif x_dir:
+        act = "{},0".format(x_val)
+        direction = x_dir
+    elif y_dir:
+        act = "0,{}".format(y_val)
+        direction = y_dir
+    else:
+        act = "0,0"
+        direction = "center"
+
+    return act, x_val, y_val, direction
+
+
+def send_line(uart_obj, payload):
+    uart_obj.write(payload + "\n")
+
+
+def read_line(uart_obj):
+    if not uart_obj.any():
+        return None
+    data = uart_obj.readline()
+    if not data:
+        return None
+    try:
+        return data.decode("utf-8").strip()
+    except Exception:
+        return None
+
+
+def run(): #If only testing out the hc05's! 
+    while True:
+        act, x_val, y_val, direction = build_command()
+
+        # Send same command to both links.
+        send_line(hc05_a, act)
+        send_line(hc05_b, act)
+
+        rx_a = read_line(hc05_a)
+        rx_b = read_line(hc05_b)
+
+        # Print coordinates + one or two direction labels, plus RX status.
+        print(
+            "TX:", act,
+            "| XY:", "{},{}".format(x_val, y_val),
+            "| DIR:", direction,
+            "| RX_A:", rx_a if rx_a else "-",
+            "| RX_B:", rx_b if rx_b else "-"
+        )
+
+        utime.sleep_ms(120)
+
+
+if __name__ == "__main__":
+    run()

@@ -68,4 +68,3 @@ while True:
     time.sleep(0.5)
     
     num = 0
-
