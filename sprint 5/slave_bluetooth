@@ -1,0 +1,100 @@
+  #Planning to modify this 
+from machine import Pin, ADC, UART, I2C
+import utime
+import time
+
+#Variables needed
+    #Raw adc values
+    #Joystick values
+    #Need to calculte deadzone from calibration
+    #minimum pwm, maximum pwm. 
+
+
+uart = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
+
+#uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9)) # This is for 
+
+LOW_EDGE = 600
+HIGH_EDGE = 60000
+
+def parse_bt_message(msg):
+    """Parse a Bluetooth payload into a command and optional coordinates.
+
+    Parameters
+    ----------
+        msg: str
+            Raw payload text from UART.
+
+    Return
+    ------
+        result: tuple
+            ("press", None, None), ("xy", x_val, y_val), or ("bad", None, None).
+    """
+    if msg in ("press", "pressed"):
+        return "press", None, None
+    parts = msg.split(",")
+    if len(parts) == 2 and all(p.strip().isdigit() for p in parts):
+        x_val, y_val = map(int, parts)
+        return "xy", x_val, y_val
+    return "bad", None, None
+
+
+
+def decode_direction(x_val, y_val):
+    """Convert joystick coordinates into direction labels.
+
+    Parameters
+    ----------
+        x_val: int
+            Raw joystick x value.
+        y_val: int
+            Raw joystick y value.
+
+    Return
+    ------
+        direction: str
+            One of "L", "R", "U", "D", "L+U", etc., or "C" for center.
+    """
+    x_dir = "L" if x_val <= LOW_EDGE else ("R" if x_val >= HIGH_EDGE else "")
+    y_dir = "U" if y_val <= LOW_EDGE else ("D" if y_val >= HIGH_EDGE else "")
+    if x_dir and y_dir:
+        return "{}+{}".format(x_dir, y_dir)
+    return x_dir or y_dir or "C"
+
+
+
+if __name__ == "__main__":
+    while True:
+        if uart.any():
+            data = uart.readline()
+            if data:
+                incoming = data.decode('utf-8').strip()
+                print("Slave recieved", incoming)
+                if (incoming == "pressed"):
+                    print("LED ON.\n")
+                    #Code for enabling GPIO pin for light generation.     
+                else:
+                    parts = incoming.split(',')
+                    if len(parts) == 2 and all(p.strip().isdigit() for p in parts): #If everything is number then map it
+                        print("slave responding, Pong")
+                        print(f'{parts}\n')
+                        xVal, yVal = map(int, parts) # Converts each result into an int, very pythonic!
+                        uart.write(f"{xVal},{yVal}\n")
+                    else:
+                        print("fail")
+                        uart.write("fail\n")
+                        break
+        else:
+            print("Smthg happened lol\n")
+        
+    time.sleep(0.5)
+    print("---")
+    time.sleep(2)
+
+'''if uart2.any():
+    data = uart2.readline()
+    print("Master recived", data.decode('utf-8').strip())
+
+'''
+
+    

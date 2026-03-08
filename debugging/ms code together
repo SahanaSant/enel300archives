@@ -14,6 +14,21 @@ button = Pin(22, Pin.IN, Pin.PULL_UP)
 LOW_EDGE = 600
 HIGH_EDGE = 60000
 
+#Pairing code on hand!!!
+"""
+slave_add = "2025,08,004BEC"
+print("Config Sla")
+send_at('AT+ORGL')
+send_at('AT+ROLE=0')
+send_at('AT+ADDR?')
+print("Done")
+print("config mas")
+send_at2('AT+ORGL')
+send_at2('AT+ROLE=1')
+send_at2('AT+CMODE=0')
+send_at2('AT+BIND=' + slave_add)
+print("mas done")
+"""
 
 def build_command():
     x_val = x_axis.read_u16()

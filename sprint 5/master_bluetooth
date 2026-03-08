@@ -1,0 +1,104 @@
+from machine import Pin, ADC, UART, I2C
+import utime
+import time
+uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
+uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
+xm= ADC(Pin(26))
+ym= ADC(Pin(27))
+button = Pin(22,Pin.IN, Pin.PULL_UP)
+
+
+def send_at(command):
+    """Send an AT command on UART0 and print the immediate reply.
+
+    Parameters
+    ----------
+        command: str
+            AT command string without trailing CRLF.
+
+    Return
+    ------
+        None
+    """
+    uart.write(command + '\r\n')
+    time.sleep(0.1)
+    if uart.any():
+        print(uart.read().decode('utf-8'))
+
+
+
+def send_at2(command):
+    """Send an AT command on UART1 and print the immediate reply.
+
+    Parameters
+    ----------
+        command: str
+            AT command string without trailing CRLF.
+
+    Return
+    ------
+        None
+    """
+    uart2.write(command + '\r\n')
+    time.sleep(0.1)
+    if uart2.any():
+        print(uart2.read().decode('utf-8'))
+
+
+
+#Pairing code on hand!!!
+"""
+slave_add = "2025,08,004BEC"
+print("Config Sla")
+send_at('AT+ORGL')
+send_at('AT+ROLE=0')
+send_at('AT+ADDR?')
+print("Done")
+print("config mas")
+send_at2('AT+ORGL')
+send_at2('AT+ROLE=1')
+send_at2('AT+CMODE=0')
+send_at2('AT+BIND=' + slave_add)
+print("mas done")
+"""
+
+if __name__ == "__main__":
+    #Test Code
+    while True:
+        
+        xVal  = xm.read_u16()
+        yVal = ym.read_u16()
+        buttonVal = button.value()
+        
+        xDir = ""
+        yDir = ""
+        #Condition to check left/right/or both
+        if xVal <= 600:
+            xDir = "left"
+        elif xVal >= 60000:
+            xDir = "right"
+        if yVal <= 600:
+            yDir = "up"
+        elif yVal >= 60000:
+            yDir = "down"
+        #Prepare to send this data to the HC-05. 
+        if buttonVal == 0:
+            act = "pressed\n"
+        elif xDir and yDir: #If slightly turning
+            act = f"{xVal},{yVal}\n"
+            print(f"{xVal},{yVal} : {xDir},{yDir}\n") #For us humans to understand. 
+        elif xDir: #if going horizontally
+            act = f"{xVal},0\n"
+            print(f"{xVal},0 : {xDir}\n")
+        elif yDir: # if going only straight
+            act = f"0,{yVal}\n"
+            print(f"0,{yVal} : {yDir}\n")
+        else:
+            act = "0,0 : center"
+        utime.sleep(0.1)
+        
+        print("master ping")
+        uart2.write(f"{act}\n")
+        time.sleep(0.5)
+        
+        num = 0

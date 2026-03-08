@@ -29,6 +29,19 @@ DISPLAY_SMOOTH_ALPHA = 0.35
 
 
 def write_lcd(line1, line2):
+    """Write two padded 16-char strings to the LCD.
+
+    Parameters
+    ----------
+        line1: str
+            Text for row 1.
+        line2: str
+            Text for row 2.
+
+    Return
+    ------
+        None
+    """
     lcd.move_to(0, 0)
     lcd.putstr(line1.ljust(16)[:16])
     lcd.move_to(0, 1)
@@ -36,6 +49,16 @@ def write_lcd(line1, line2):
 
 
 def trigger_ultrasonic():
+    """Emit a trigger pulse for one ultrasonic measurement.
+
+    Parameters
+    ----------
+        None
+
+    Return
+    ------
+        None
+    """
     trig.low()
     time.sleep_us(3)
     trig.high()
@@ -44,6 +67,17 @@ def trigger_ultrasonic():
 
 
 def measure_echo_pulse_us():
+    """Measure raw echo pulse width from the ultrasonic sensor.
+
+    Parameters
+    ----------
+        None
+
+    Return
+    ------
+        pulse_us: int, optional
+            Echo high-time in microseconds. Returns None on timeout.
+    """
     trigger_ultrasonic()
 
     wait_start = time.ticks_us()
@@ -61,6 +95,17 @@ def measure_echo_pulse_us():
 
 
 def measure_distance_once_cm():
+    """Compute one distance reading in centimeters.
+
+    Parameters
+    ----------
+        None
+
+    Return
+    ------
+        distance_cm: float, optional
+            Distance in cm if valid; otherwise None.
+    """
     pulse_us = measure_echo_pulse_us()
     if pulse_us is None:
         return None
@@ -74,6 +119,17 @@ def measure_distance_once_cm():
 
 
 def get_distance():
+    """Collect multiple readings and return a filtered distance.
+
+    Parameters
+    ----------
+        None
+
+    Return
+    ------
+        distance_cm: float, optional
+            Filtered distance in cm, or None when not enough valid samples.
+    """
     readings = []
 
     for _ in range(SAMPLES_PER_READING):
@@ -106,7 +162,13 @@ display_distance = None
 write_lcd("Distance (cm)", "Starting...")
 time.sleep_ms(200)
 
-while True:
+
+
+
+
+
+
+if __name__ == "__main__":
     output = get_distance()
 
     if output is None:
