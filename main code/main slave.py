@@ -1,15 +1,51 @@
 import utime
-from LCDdisplay import *
-from slave_bluetooth import *
-from master_bluetooth import *
+from machine import I2C, Pin
+import sys
+from slave_bluetooth import uart, parse_bt_message, decode_direction
+from differential_steering import apply_joystick_pivot
+
+if "libraries" not in sys.path:
+    sys.path.append("libraries")
+
+from pico_i2c_lcd import I2cLcd
+from hcsr04 import HCSR04
 
 
-# This file now assumes imports provide:
-# uart, write_lcd, measure_distance_once_cm, DISPLAY_SMOOTH_ALPHA,
-# parse_bt_message, decode_direction
-
+#Some constants
 SENSOR_PERIOD_MS = 120
 LCD_PERIOD_MS = 180
+DISPLAY_SMOOTH_ALPHA = 0.25
+LCD_COLS = 16
+
+#Ultrasonic sensor
+trig = Pin(16, Pin.OUT) #Can modify these pin numbers
+echo = Pin(17, Pin.IN)
+
+#LCD display
+i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
+lcd = I2cLcd(i2c, 0x27, 2, 16)
+distance_sensor = HCSR04(trigger_pin=16, echo_pin=17)
+
+
+def _format_lcd_line(text):
+    return str(text)[:LCD_COLS].ljust(LCD_COLS)
+
+
+def write_lcd(line1, line2):
+    lcd.move_to(0, 0)
+    lcd.putstr(_format_lcd_line(line1))
+    lcd.move_to(0, 1)
+    lcd.putstr(_format_lcd_line(line2))
+
+
+def measure_distance_once_cm():
+    try:
+        cm = distance_sensor.distance_cm()
+    except OSError:
+        return None
+    if cm <= 0 or cm > 400:
+        return None
+    return cm
 
 
 if __name__ == "__main__":
@@ -42,12 +78,29 @@ if __name__ == "__main__":
                     if msg_type == "press":
                         bt_status = "PRESS"
                         uart.write("ok,press\n")
+                        
                     elif msg_type == "xy":
                         last_x = x_val
                         last_y = y_val
                         last_dir = decode_direction(x_val, y_val)
                         bt_status = "OK"
                         uart.write("ok,{},{}\n".format(x_val, y_val))
+                        
+                        #Now steering the car 
+                        left_dir, left_spd, right_dir, right_spd = apply_joystick_pivot(
+                        x_val, y_val,
+                        center_x=32768, center_y=32768,
+                        deadzone=0.05,
+                        pwm_min_run=20,
+                        pwm_max=60,
+                        pivot_threshold=0.15,
+                        invert_y=True,
+                        )
+                        
+                        print("ok,{},{},{},{},{},{}\n".format(
+                        x_val, y_val, left_dir, left_spd, right_dir, right_spd
+                        ))
+                        
                     else:
                         bt_status = "BAD"
                         uart.write("err,bad_packet\n")

@@ -48,22 +48,26 @@ def send_at2(command):
         print(uart2.read().decode("utf-8"))
 
 
-def build_bt_payload(x_val, y_val, button_val):
+def build_bt_payload(x_val, y_val, button_val, raw_adc_x, raw_adc_y):
     """Build a payload compatible with slave_bluetooth.parse_bt_message.
 
     Parameters
     ----------
         x_val: int
-            Raw joystick x-axis value.
+            Joystick x value used for control logic.
         y_val: int
-            Raw joystick y-axis value.
+            Joystick y value used for control logic.
         button_val: int
             Button state where 0 means pressed.
+        raw_adc_x: int
+            Raw ADC x-axis value from the joystick.
+        raw_adc_y: int
+            Raw ADC y-axis value from the joystick.
 
     Return
     ------
         payload: str
-            "pressed" or numeric "x,y" format.
+            "pressed" or numeric "x,y|raw_x,raw_y" format.
     """
     x_dir = ""
     y_dir = ""
@@ -81,12 +85,15 @@ def build_bt_payload(x_val, y_val, button_val):
     if button_val == 0:
         return "pressed"
     if x_dir and y_dir:
-        return "{},{}".format(x_val, y_val)
-    if x_dir:
-        return "{},0".format(x_val)
-    if y_dir:
-        return "0,{}".format(y_val)
-    return "0,0"
+        joy_x, joy_y = x_val, y_val
+    elif x_dir:
+        joy_x, joy_y = x_val, 0
+    elif y_dir:
+        joy_x, joy_y = 0, y_val
+    else:
+        joy_x, joy_y = 0, 0
+
+    return "{},{}|{},{}".format(joy_x, joy_y, raw_adc_x, raw_adc_y)
 
 
 def send_bt_payload(payload):
@@ -123,11 +130,13 @@ print("mas done")
 
 if __name__ == "__main__":
     while True:
-        x_val = xm.read_u16()
-        y_val = ym.read_u16()
+        raw_adc_x = xm.read_u16()
+        raw_adc_y = ym.read_u16()
+        x_val = raw_adc_x
+        y_val = raw_adc_y
         button_val = button.value()
 
-        act = build_bt_payload(x_val, y_val, button_val)
+        act = build_bt_payload(x_val, y_val, button_val, raw_adc_x, raw_adc_y)
         print("master ping | TX:", act)
         send_bt_payload(act)
 

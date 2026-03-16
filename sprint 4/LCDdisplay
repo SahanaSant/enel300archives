@@ -34,7 +34,7 @@ def get_distance(): #For Ultrasonic Sensor
 while True:
     
     output = get_distance()
-    print(f'Distance: {output:.2f}  cm\n')
+    print(output)
     
     lcd.move_to(0, 0)
     lcd.putstr("Distance (cm)")
@@ -42,4 +42,4 @@ while True:
     lcd.move_to(0, 1)
     lcd.putstr("{:.2f}       ".format(output))
     
-    time.sleep(1)
+    time.sleep(0.5)

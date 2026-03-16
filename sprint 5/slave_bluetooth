@@ -2,12 +2,7 @@
 from machine import Pin, ADC, UART, I2C
 import utime
 import time
-
-#Variables needed
-    #Raw adc values
-    #Joystick values
-    #Need to calculte deadzone from calibration
-    #minimum pwm, maximum pwm. 
+ 
 
 
 uart = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
