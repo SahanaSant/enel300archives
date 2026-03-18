@@ -7,20 +7,6 @@ def clamp(value, low, high):
     return max(low, min(high, value))
 
 
-def _to_signed_unit(raw, center, deadzone):
-    """Map raw joystick ADC value to -1.0..1.0 with center deadzone."""
-    if raw >= center:
-        span = max(1, 65535 - center)
-        norm = (raw - center) / span
-    else:
-        span = max(1, center)
-        norm = (raw - center) / span
-
-    if abs(norm) < deadzone:
-        return 0.0
-    return clamp(norm, -1.0, 1.0)
-
-
 def _command_from_signed(cmd, pwm_min_run, pwm_max):
     """Convert signed command (-1..1) into (direction, speed_percent)."""
     mag = abs(cmd)
@@ -47,39 +33,18 @@ def _edge_axis_to_signed(value, low_edge, high_edge):
 def mix_joystick_to_pivot(
     x_val,
     y_val,
-    center_x=32768,
-    center_y=32768,
-    deadzone=0.05,
     pwm_min_run=20,
     pwm_max=100,
     pivot_threshold=0.15,
-    invert_y=True,
-    input_mode="ms_edges",
     low_edge=600,
     high_edge=60000,
 ):
-    """Convert joystick x/y values into differential pivot commands.
-
-    input_mode:
-        - "ms_edges": uses ms-code rules (0=center, <=low_edge, >=high_edge)
-        - "raw": uses centered normalization around center_x/center_y
-
-    Returns:
-        (left_dir, left_speed, right_dir, right_speed)
-    """
-    if input_mode == "ms_edges":
-        x = _edge_axis_to_signed(x_val, low_edge, high_edge)
-        y = _edge_axis_to_signed(y_val, low_edge, high_edge)
-    else:
-        x = _to_signed_unit(x_val, center_x, deadzone)
-        y = _to_signed_unit(y_val, center_y, deadzone)
+    """Use ms-edge joystick logic (0=center, <=low, >=high) for pivot steering."""
+    x = _edge_axis_to_signed(x_val, low_edge, high_edge)
+    y = _edge_axis_to_signed(y_val, low_edge, high_edge)
 
     if x == 0.0 and y == 0.0:
         return "stop", 0, "stop", 0
-
-    # Many thumbsticks report lower ADC when pushed up.
-    if invert_y:
-        y = -y
 
     # Pivot steering: if little forward command, rotate in place.
     if abs(y) < pivot_threshold:

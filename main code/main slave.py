@@ -89,12 +89,11 @@ if __name__ == "__main__":
                         #Now steering the car 
                         left_dir, left_spd, right_dir, right_spd = apply_joystick_pivot(
                         x_val, y_val,
-                        center_x=32768, center_y=32768,
-                        deadzone=0.05,
                         pwm_min_run=20,
                         pwm_max=60,
                         pivot_threshold=0.15,
-                        invert_y=True,
+                        low_edge=600,
+                        high_edge=60000,
                         )
                         
                         print("ok,{},{},{},{},{},{}\n".format(
