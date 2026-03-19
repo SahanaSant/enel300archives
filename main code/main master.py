@@ -1,39 +1,29 @@
 import utime
-from master_bluetooth import (
-    xm,
-    ym,
-    button,
-    uart2,
-    LOW_EDGE,
-    HIGH_EDGE,
-    build_bt_payload,
-    send_bt_payload,
-)
+from master_bluetooth import xm, ym, button, uart2, LOW_EDGE, HIGH_EDGE
 
 SEND_PERIOD_MS = 120
 
 
-def decode_direction_for_debug(x_val, y_val, button_val):
-    """Return a human-readable joystick direction string for logging."""
+def build_steering_payload(x_val, y_val, button_val):
+    """Build steering-only packet: 'press' or numeric 'x,y'."""
     if button_val == 0:
-        return "PRESS"
+        return "press", "PRESS"
 
-    x_dir = ""
-    y_dir = ""
+    x_active = (x_val <= LOW_EDGE) or (x_val >= HIGH_EDGE)
+    y_active = (y_val <= LOW_EDGE) or (y_val >= HIGH_EDGE)
 
-    if x_val <= LOW_EDGE:
-        x_dir = "L"
-    elif x_val >= HIGH_EDGE:
-        x_dir = "R"
+    tx_x = x_val if x_active else 0
+    tx_y = y_val if y_active else 0
 
-    if y_val <= LOW_EDGE:
-        y_dir = "U"
-    elif y_val >= HIGH_EDGE:
-        y_dir = "D"
+    x_dir = "L" if x_val <= LOW_EDGE else ("R" if x_val >= HIGH_EDGE else "")
+    y_dir = "U" if y_val <= LOW_EDGE else ("D" if y_val >= HIGH_EDGE else "")
 
     if x_dir and y_dir:
-        return "{}+{}".format(x_dir, y_dir)
-    return x_dir or y_dir or "C"
+        direction = "{}+{}".format(x_dir, y_dir)
+    else:
+        direction = x_dir or y_dir or "C"
+
+    return "{},{}".format(tx_x, tx_y), direction
 
 
 if __name__ == "__main__":
@@ -49,13 +39,13 @@ if __name__ == "__main__":
             y_val = ym.read_u16()
             button_val = button.value()
 
-            payload = build_bt_payload(x_val, y_val, button_val)
-            send_bt_payload(payload)
+            payload, direction = build_steering_payload(x_val, y_val, button_val)
+            uart2.write(payload + "\n")
 
             print(
                 "TX:", payload,
                 "| XY:", "{},{}".format(x_val, y_val),
-                "| DIR:", decode_direction_for_debug(x_val, y_val, button_val),
+                "| DIR:", direction,
             )
 
             if uart2.any():
