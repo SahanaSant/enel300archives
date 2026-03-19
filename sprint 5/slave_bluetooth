@@ -5,7 +5,7 @@ import time
  
 
 
-uart = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
+uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
 
 #uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9)) # This is for 
 
@@ -25,12 +25,27 @@ def parse_bt_message(msg):
         result: tuple
             ("press", None, None), ("xy", x_val, y_val), or ("bad", None, None).
     """
+    msg = msg.strip()
+
     if msg in ("press", "pressed"):
         return "press", None, None
+
+    # Accept "x,y|raw_x,raw_y" by taking the left x,y pair.
+    if "|" in msg:
+        msg = msg.split("|", 1)[0]
+
     parts = msg.split(",")
-    if len(parts) == 2 and all(p.strip().isdigit() for p in parts):
-        x_val, y_val = map(int, parts)
-        return "xy", x_val, y_val
+    if len(parts) == 2:
+        a = parts[0].strip()
+        b = parts[1].strip()
+        if a.isdigit() and b.isdigit():
+            x_val, y_val = int(a), int(b)
+            return "xy", x_val, y_val
+
+    # Some test runs may emit a single "0"; treat it as center command.
+    if msg == "0":
+        return "xy", 0, 0
+
     return "bad", None, None
 
 
@@ -59,28 +74,41 @@ def decode_direction(x_val, y_val):
 
 
 if __name__ == "__main__":
+    last_no_uart_ms = utime.ticks_ms()
     while True:
         if uart.any():
             data = uart.readline()
             if data:
-                incoming = data.decode('utf-8').strip()
+                try:
+                    incoming = data.decode("utf-8").strip()
+                except Exception:
+                    incoming = ""
+
+                if not incoming:
+                    utime.sleep_ms(10)
+                    continue
+
                 print("Slave recieved", incoming)
-                if (incoming == "pressed"):
+                msg_type, x_val, y_val = parse_bt_message(incoming)
+
+                if msg_type == "press":
                     print("LED ON.\n")
-                    #Code for enabling GPIO pin for light generation.     
+                    uart.write("ok,press\n")
+                elif msg_type == "xy":
+                    direction = decode_direction(x_val, y_val)
+                    print("slave responding, Pong")
+                    print("XY: {},{} | DIR: {}\n".format(x_val, y_val, direction))
+                    uart.write("{},{}\n".format(x_val, y_val))
                 else:
-                    parts = incoming.split(',')
-                    if len(parts) == 2 and all(p.strip().isdigit() for p in parts): #If everything is number then map it
-                        print("slave responding, Pong")
-                        print(f'{parts}\n')
-                        xVal, yVal = map(int, parts) # Converts each result into an int, very pythonic!
-                        uart.write(f"{xVal},{yVal}\n")
-                    else:
-                        print("fail")
-                        uart.write("fail\n")
-                        break
+                    print("fail")
+                    uart.write("fail\n")
         else:
-            print("Smthg happened lol\n")
+            # Throttle "no uart" logs to avoid flooding serial output.
+            now = utime.ticks_ms()
+            if utime.ticks_diff(now, last_no_uart_ms) >= 1000:
+                last_no_uart_ms = now
+                print("no uart received")
+            utime.sleep_ms(20)
         
     time.sleep(0.5)
     print("---")

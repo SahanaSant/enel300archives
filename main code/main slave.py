@@ -1,6 +1,7 @@
 import utime
 from slave_bluetooth import uart, parse_bt_message, decode_direction
 from differential_steering import apply_joystick_pivot
+import motor_module  # explicit motor pin/PWM setup import
 
 
 if __name__ == "__main__":
