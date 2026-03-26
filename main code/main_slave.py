@@ -2,9 +2,8 @@ from machine import Pin, PWM, ADC, UART, I2C
 import time
 from hcsr04_pi import HCSR04 # Must have this library saved on Pico to work
 
-led = Pin(4, Pin.OUT)
+# === Bluetooth Module ===
 uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
-
 
 # === L298N Motor Driver ===
 # Motor A
@@ -25,8 +24,8 @@ motor_b_correction = 1.0 # Adjust so both motors have same speed
 trig = Pin(12, Pin.OUT) #Can modify these pin numbers
 echo = Pin(11, Pin.IN)
 
-# === LED Light ===
-led = Pin(4, Pin.OUT)
+# === LED Pinmapping ===
+led = Pin(10, Pin.OUT)
 
 def get_distance(): #For Ultrasonic Sensor
     trig.low()
@@ -117,11 +116,13 @@ while True:
             motor_a()
             motor_b()
         
-        if (com == "press"):
-            led.toggle()
-            print("slave responding, Pong")
+        elif (com == "press"):
+            print("pass")
+            led.value(1)
             time.sleep(1)
+            print("slave responding, Pong")
             uart.write(f"{com}\n")
+            led.value(0)
             
         
         else:
@@ -148,4 +149,3 @@ while True:
 #     sleep(2.6)
 #     motor_a()
 #     motor_b()
-

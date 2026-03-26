@@ -3,17 +3,17 @@ import utime
 import time
 from pico_i2c_lcd import I2cLcd
 
+# === Bluetooth Module ===
 uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
 
+# === Joystick ===
 xm= ADC(Pin(26))
 ym= ADC(Pin(27))
-button = Pin(22,Pin.IN, Pin.PULL_UP)
+button = Pin(22,Pin.IN, Pin.PULL_DOWN)
 
-#LCD display
-#i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
-#lcd = I2cLcd(i2c, 0x27, 2, 16)
-
-#lcd.clear()   # <-- put it here (only once)
+# === LCD Display ===
+i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
+lcd = I2cLcd(i2c, 0x27, 2, 16)
 
 """
 slave_add = "2025,08,004BEC"
@@ -47,6 +47,9 @@ print("mas done")
 """
 #Test Code
 
+
+lcd.clear()   # <-- put it here (only once)
+
 while True:
     
     xVal  = xm.read_u16()
@@ -63,6 +66,8 @@ while True:
         act = ("up")
     elif yVal >=60000:
         act = ("down")
+    elif buttonVal == 0:
+        act = ("press")
     utime.sleep(0.1)
     
     print("master ping")
@@ -74,22 +79,13 @@ while True:
         data = uart2.readline()
         print("Master recived", data.decode('utf-8').strip())
         
+        #Printing to lCD
+        lcd.move_to(0, 0)
+        lcd.putstr("Distance (cm)")
+        
+        lcd.move_to(0, 1)
+        lcd.putstr(str(data.decode('utf-8').strip()))
+        
     print("---")
     
-    #Ultrasonic sensor pairing
-    if uart2.any():
-        data = uart2.readline()
-        print("Master recieved distance", data.decode('utf-8').strip())
-        com = data.decode('utf-8').strip()
-        
-        #if (com.isdigit()):
-            #print("Master abt to print distance")
-            
-            #lcd.move_to(0, 0)
-            #lcd.putstr("Distance (cm)")
-            
-            #lcd.move_to(0, 1)
-            #lcd.putstr(com)
-            
-    time.sleep(0.5)
-
+    time.sleep(1)
