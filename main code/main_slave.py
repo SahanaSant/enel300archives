@@ -25,8 +25,11 @@ motor_b_en.freq(1000)
 motor_b_correction = 1.0 # Adjust so both motors have same speed
 
 # === Ultrasonic Sensor ===
-trig = Pin(16, Pin.OUT) #Can modify these pin numbers
-echo = Pin(17, Pin.IN)
+trig = Pin(18, Pin.OUT) #Can modify these pin numbers
+echo = Pin(20, Pin.IN)
+
+# === LED Light ===
+led = Pin(4, Pin.OUT)
 
 def get_distance(): #For Ultrasonic Sensor
     trig.low()
@@ -86,7 +89,7 @@ while True:
         if (com == "left"):
             motor_a("backward", 38)
             motor_b("forward", 40)
-            sleep(1)
+            sleep(0.2)
             motor_a()
             motor_b()
     
@@ -95,7 +98,7 @@ while True:
             print("slave responding, Pong")
             motor_a("forward", 38)
             motor_b("backward", 40)
-            sleep(1)
+            sleep(0.2)
             motor_a()
             motor_b()
             
@@ -129,23 +132,23 @@ while True:
             sleep(1)
             uart.write("fail motors\n")
     
-        #Send readings of course when the joystick and car are paired.
-        output = get_distance()
-        print(output)
-        utime.sleep(0.1)
-        
-        act = "{output:.2f}"
-        print (f'{act}\n')
-        print("slave about to send distance")
-        uart.write(act)
-        time.sleep (0.5)
-        
-        if uart.any():
-            data = uart.readline()
-            print("Slave recieved distance check", data.decode('utf-8').strip())
-        
-        print("---")
+    #Send readings of course when the joystick and car are paired.
+    output = get_distance()
+    print(output)
+    utime.sleep(0.1)
     
+    act = "{output:.2f}"
+    print (f'{act}\n')
+    print("slave about to send distance")
+    uart.write(act)
+    time.sleep (0.5)
+    
+    if uart.any():
+        data = uart.readline()
+        print("Slave recieved distance check", data.decode('utf-8').strip())
+    
+    print("---")
+
     sleep(0.1)
 #     
 #     # Travel forward

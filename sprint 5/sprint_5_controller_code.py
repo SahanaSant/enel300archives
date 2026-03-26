@@ -6,7 +6,7 @@ uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
 
 xm= ADC(Pin(26))
 ym= ADC(Pin(27))
-button = Pin(22,Pin.IN, Pin.PULL_UP)
+button = Pin(22,Pin.IN, Pin.PULL_DOWN)
 
 """
 slave_add = "2025,08,004BEC"
@@ -56,6 +56,8 @@ while True:
         act = ("up")
     elif yVal >=60000:
         act = ("down")
+    elif buttonVal != 0:
+        act = ("press")
     utime.sleep(0.1)
     
     print("master ping")
@@ -69,4 +71,5 @@ while True:
         
     print("---")
     
-    time.sleep(2)
+    time.sleep(1)
+
