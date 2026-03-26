@@ -1,13 +1,10 @@
 from machine import Pin, PWM, ADC, UART, I2C
-from time import sleep
-from hcsr04_pi import HCSR04 # Must have this library saved on Pico to work
-from pico_i2c_lcd import I2cLcd
 import time
+from hcsr04_pi import HCSR04 # Must have this library saved on Pico to work
 
-
+led = Pin(4, Pin.OUT)
 uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
 
-act = ""
 
 # === L298N Motor Driver ===
 # Motor A
@@ -25,18 +22,18 @@ motor_b_en.freq(1000)
 motor_b_correction = 1.0 # Adjust so both motors have same speed
 
 # === Ultrasonic Sensor ===
-trig = Pin(18, Pin.OUT) #Can modify these pin numbers
-echo = Pin(20, Pin.IN)
+trig = Pin(12, Pin.OUT) #Can modify these pin numbers
+echo = Pin(11, Pin.IN)
 
 # === LED Light ===
 led = Pin(4, Pin.OUT)
 
 def get_distance(): #For Ultrasonic Sensor
     trig.low()
-    time.sleep_us(2)
+    #time.sleep(1)
     
     trig.high()
-    time.sleep_us(10)
+    #time.sleep(1)
     trig.low()
 
     while echo.value() == 0:
@@ -78,7 +75,6 @@ def motor_b(direction = "stop", speed = 0):
         motor_b_in4.value(0)
     motor_b_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
 
-
 while True:
     
     if uart.any():
@@ -89,7 +85,7 @@ while True:
         if (com == "left"):
             motor_a("backward", 38)
             motor_b("forward", 40)
-            sleep(0.2)
+            time.sleep(1)
             motor_a()
             motor_b()
     
@@ -98,7 +94,7 @@ while True:
             print("slave responding, Pong")
             motor_a("forward", 38)
             motor_b("backward", 40)
-            sleep(0.2)
+            time.sleep(1)
             motor_a()
             motor_b()
             
@@ -108,7 +104,7 @@ while True:
             print("slave responding, Pong")
             motor_a("forward", 38)
             motor_b("forward", 40)
-            sleep(1)
+            time.sleep(1)
             motor_a()
             motor_b()
        
@@ -117,39 +113,27 @@ while True:
             print("slave responding, Pong")
             motor_a("backward", 38)
             motor_b("backward", 40)
-            sleep(1)
+            time.sleep(1)
             motor_a()
             motor_b()
         
         if (com == "press"):
+            led.toggle()
             print("slave responding, Pong")
-            sleep(1)
+            time.sleep(1)
             uart.write(f"{com}\n")
             
         
         else:
-            print("fail motors")
-            sleep(1)
-            uart.write("fail motors\n")
-    
-    #Send readings of course when the joystick and car are paired.
+            print("fail")
+            time.sleep(0.1)
+            uart.write("fail\n")
+        
     output = get_distance()
-    print(output)
-    utime.sleep(0.1)
+    uart.write(f"{output:.2f}\n")
+    #utime.sleep(0.1)
     
-    act = str(output)
-    print (f'{act}\n')
-    print("slave about to send distance")
-    uart.write(act)
-    time.sleep (0.5)
-    
-    if uart.any():
-        data = uart.readline()
-        print("Slave recieved distance check", data.decode('utf-8').strip())
-    
-    print("---")
-
-    sleep(0.1)
+    time.sleep(0.1)
 #     
 #     # Travel forward
 #     motor_a("forward", 38)
