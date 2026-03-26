@@ -10,10 +10,10 @@ ym= ADC(Pin(27))
 button = Pin(22,Pin.IN, Pin.PULL_UP)
 
 #LCD display
-i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
-lcd = I2cLcd(i2c, 0x27, 2, 16)
+#i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
+#lcd = I2cLcd(i2c, 0x27, 2, 16)
 
-lcd.clear()   # <-- put it here (only once)
+#lcd.clear()   # <-- put it here (only once)
 
 """
 slave_add = "2025,08,004BEC"
@@ -82,14 +82,14 @@ while True:
         print("Master recieved distance", data.decode('utf-8').strip())
         com = data.decode('utf-8').strip()
         
-        if (com.isdigit()):
-            print("Master abt to print distance")
+        #if (com.isdigit()):
+            #print("Master abt to print distance")
             
-            lcd.move_to(0, 0)
-            lcd.putstr("Distance (cm)")
+            #lcd.move_to(0, 0)
+            #lcd.putstr("Distance (cm)")
             
-            lcd.move_to(0, 1)
-            lcd.putstr(com)
+            #lcd.move_to(0, 1)
+            #lcd.putstr(com)
             
     time.sleep(0.5)
 

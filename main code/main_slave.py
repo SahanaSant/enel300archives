@@ -137,7 +137,7 @@ while True:
     print(output)
     utime.sleep(0.1)
     
-    act = "{output:.2f}"
+    act = str(output)
     print (f'{act}\n')
     print("slave about to send distance")
     uart.write(act)
@@ -164,3 +164,4 @@ while True:
 #     sleep(2.6)
 #     motor_a()
 #     motor_b()
+
