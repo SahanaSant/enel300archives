@@ -83,7 +83,7 @@ while True:
     if uart.any():
         data = uart.readline()
         if not data:
-            sleep(0.02)
+            #sleep(0.02)
             continue
 
         com = data.decode('utf-8').strip()
@@ -119,6 +119,7 @@ while True:
 #     sleep(2.6)
 #     motor_a()
 #     motor_b()
+
 
 
 
