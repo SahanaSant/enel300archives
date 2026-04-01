@@ -54,70 +54,60 @@ def motor_b(direction = "stop", speed = 0):
     motor_b_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
     
 def get_distance(): #For Ultrasonic Sensor
+    
+    
     return d_sensor.distance_cm()
+
+def drive_from_command(com, speed=50):
+    if com == "left":
+        motor_a("backward", speed)
+        motor_b("forward", speed)
+    elif com == "right":
+        motor_a("forward", speed)
+        motor_b("backward", speed)
+    elif com == "up":
+        motor_a("forward", speed)
+        motor_b("forward", speed)
+    elif com == "down":
+        motor_a("backward", speed)
+        motor_b("backward", speed)
+    elif com == "stop":
+        motor_a()
+        motor_b()
+    else:
+        return False
+    return True
 
 while True:
     
     if uart.any():
         data = uart.readline()
-        print("Slave recived", data.decode('utf-8').strip())
+        if not data:
+            #sleep(0.02)
+            continue
+
         com = data.decode('utf-8').strip()
-        
-        if (com == "left"):
-            motor_a("backward", 38)
-            motor_b("forward", 40)
-            sleep(1)
-            motor_a()
-            motor_b()
-    
-    
-        elif (com == "right"):
-            print("slave responding, Pong")
-            motor_a("forward", 38)
-            motor_b("backward", 40)
-            sleep(1)
-            motor_a()
-            motor_b()
-            
-    
-    
-        elif (com == "up"):
-            print("slave responding, Pong")
-            motor_a("forward", 38)
-            motor_b("forward", 40)
-            sleep(1)
-            motor_a()
-            motor_b()
-       
-    
-        elif (com == "down"):
-            print("slave responding, Pong")
-            motor_a("backward", 38)
-            motor_b("backward", 40)
-            sleep(1)
-            motor_a()
-            motor_b()
-        
-        elif (com == "press"):
-            print("pass")
+        print("Slave recived", com)
+
+        if com in ("left", "right", "up", "down", "stop"):
+            drive_from_command(com, 50)
+
+        elif com == "press":
             led.value(1)
             sleep(1)
-            print("slave responding, Pong")
-            #uart.write(f"{com}\n")
+            output = get_distance()
             led.value(0)
-            
-        
+            print(f'{output}\n')
+            uart.write(f"{output:.2f}\n")
+            while uart.any():
+                uart.read()
+
         else:
             print("fail")
-            sleep(1)
-            uart.write("fail\n")
     #Car battery works fine until calling getting output 
-    output = get_distance()
-    print(f'{output}\n')
-    uart.write(f"{output:.2f}\n")
     
             
-    sleep(0.1)
+    sleep(0.02)
 #     
 #     # Travel forward
 #     motor_a("forward", 38)
@@ -132,6 +122,7 @@ while True:
 #     sleep(2.6)
 #     motor_a()
 #     motor_b()
+
 
 
 

@@ -70,16 +70,22 @@ while True:
         act = ("press")
     else:
         act = ("stop")
-    utime.sleep(0.1)
+    time.sleep(0.1)
     
     print("master ping")
     print(f"{act}\n")
     uart2.write(f"{act}\n")
+    
+    
+    
     #time.sleep(0.5)
     
-    if uart2.any():
+    if act == "press":
+        time.sleep(2.5)
         data = uart2.readline()
-        print("Master recived", data.decode('utf-8').strip())
+        data = data.decode('utf-8').strip()
+        print("Master recieved, The distance in cm is ", data)
+        time.sleep(8)
         '''
         #Printing to lCD
         lcd.clear()   # <-- put it here (only once)

@@ -1,7 +1,7 @@
 from machine import Pin, ADC, UART, I2C
 import utime
 import time
-from pico_i2c_lcd import I2cLcd
+#from pico_i2c_lcd import I2cLcd
 
 # === Bluetooth Module ===
 uart2 = UART(1,baudrate=9600, tx =Pin(8), rx=Pin(9))
@@ -12,8 +12,8 @@ ym= ADC(Pin(27))
 button = Pin(22,Pin.IN, Pin.PULL_DOWN)
 
 # === LCD Display ===
-i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
-lcd = I2cLcd(i2c, 0x27, 2, 16)
+#i2c = I2C(0, sda=Pin(0), scl=Pin(1)) #Can modify these pin numbers
+#lcd = I2cLcd(i2c, 0x27, 2, 16)
 
 """
 slave_add = "2025,08,004BEC"
@@ -48,7 +48,7 @@ print("mas done")
 #Test Code
 
 
-lcd.clear()   # <-- put it here (only once)
+#lcd.clear()   # <-- put it here (only once)
 
 while True:
     
@@ -68,17 +68,25 @@ while True:
         act = ("down")
     elif buttonVal == 0:
         act = ("press")
-    utime.sleep(0.1)
+    else:
+        act = ("stop")
+    time.sleep(0.1)
     
     print("master ping")
     print(f"{act}\n")
     uart2.write(f"{act}\n")
-    time.sleep(0.5)
     
-    if uart2.any():
+    
+    
+    #time.sleep(0.5)
+    
+    if act == "press":
+        time.sleep(2.5)
         data = uart2.readline()
-        print("Master recived", data.decode('utf-8').strip())
-        
+        data = data.decode('utf-8').strip()
+        print("Master recieved, The distance in cm is ", data)
+        time.sleep(8)
+        '''
         #Printing to lCD
         lcd.clear()   # <-- put it here (only once)
         lcd.move_to(0, 0)
@@ -86,7 +94,9 @@ while True:
         
         lcd.move_to(0, 1)
         lcd.putstr(str(data.decode('utf-8').strip()))
+        '''
         
     print("---")
     
-    time.sleep(1)
+    #time.sleep(1)
+
