@@ -1,10 +1,10 @@
 from machine import Pin, PWM, ADC, UART, I2C
-import time
+from time import sleep, ticks_us, ticks_diff
+import utime
 from hcsr04_pi import HCSR04 # Must have this library saved on Pico to work
 
-#led = Pin(10, Pin.OUT)
+led = Pin(10, Pin.OUT)
 uart = UART(0,baudrate=9600, tx =Pin(16), rx=Pin(17))
-
 
 # === L298N Motor Driver ===
 # Motor A
@@ -22,26 +22,7 @@ motor_b_en.freq(1000)
 motor_b_correction = 1.0 # Adjust so both motors have same speed
 
 # === Ultrasonic Sensor ===
-trig = Pin(12, Pin.OUT) #Can modify these pin numbers
-echo = Pin(11, Pin.IN)
-
-def get_distance(): #For Ultrasonic Sensor
-    trig.low()
-    #time.sleep(1)
-    
-    trig.high()
-    #time.sleep(1)
-    trig.low()
-
-    while echo.value() == 0:
-        start = time.ticks_us()
-    
-    while echo.value() == 1:
-        end = time.ticks_us()
-
-    duration = time.ticks_diff(end, start)
-    distance = (duration * 0.0343) / 2
-    return distance
+d_sensor = HCSR04(trigger_pin=12, echo_pin=11)
 
 
 # Function to control Motor A
@@ -71,68 +52,59 @@ def motor_b(direction = "stop", speed = 0):
         motor_b_in3.value(0)
         motor_b_in4.value(0)
     motor_b_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
+    
+def get_distance(): #For Ultrasonic Sensor
+    
+    
+    return d_sensor.distance_cm()
+
+def drive_from_command(com, speed=50):
+    if com == "left":
+        motor_a("backward", speed)
+        motor_b("forward", speed)
+    elif com == "right":
+        motor_a("forward", speed)
+        motor_b("backward", speed)
+    elif com == "up":
+        motor_a("forward", speed)
+        motor_b("forward", speed)
+    elif com == "down":
+        motor_a("backward", speed)
+        motor_b("backward", speed)
+    elif com == "stop":
+        motor_a()
+        motor_b()
+    else:
+        return False
+    return True
 
 while True:
     
     if uart.any():
         data = uart.readline()
-        print("Slave recived", data.decode('utf-8').strip())
+        if not data:
+            sleep(0.02)
+            continue
+
         com = data.decode('utf-8').strip()
-        
-        if (com == "left"):
-            motor_a("backward", 38)
-            motor_b("forward", 40)
-            time.sleep(1)
-            motor_a()
-            motor_b()
-    
-    
-        elif (com == "right"):
-            print("slave responding, Pong")
-            motor_a("forward", 38)
-            motor_b("backward", 40)
-            time.sleep(1)
-            motor_a()
-            motor_b()
-            
-    
-    
-        elif (com == "up"):
-            print("slave responding, Pong")
-            motor_a("forward", 38)
-            motor_b("forward", 40)
-            time.sleep(1)
-            motor_a()
-            motor_b()
-       
-    
-        elif (com == "down"):
-            print("slave responding, Pong")
-            motor_a("backward", 38)
-            motor_b("backward", 40)
-            time.sleep(1)
-            motor_a()
-            motor_b()
-        
-        #elif (com == "press"):
-            #print("pass")
-            #led.value(1)
-            #time.sleep(1)
-            #print("slave responding, Pong")
-            #uart.write(f"{com}\n")
-            #led.value(0)
-            
-        
+        print("Slave recived", com)
+
+        if com in ("left", "right", "up", "down", "stop"):
+            drive_from_command(com, 50)
+
+        elif com == "press":
+            led.value(1)
+            output = get_distance()
+            led.value(0)
+            print(f'{output}\n')
+            uart.write(f"{output:.2f}\n")
+
         else:
             print("fail")
-            time.sleep(0.1)
-            uart.write("fail\n")
-        
-    output = get_distance()
-    uart.write(f"{output:.2f}\n")
-    #utime.sleep(0.1)
+    #Car battery works fine until calling getting output 
     
-    time.sleep(0.1)
+            
+    sleep(0.02)
 #     
 #     # Travel forward
 #     motor_a("forward", 38)

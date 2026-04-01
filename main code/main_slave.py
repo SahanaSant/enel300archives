@@ -103,7 +103,7 @@ while True:
             led.value(1)
             sleep(1)
             print("slave responding, Pong")
-            uart.write(f"{com}\n")
+            #uart.write(f"{com}\n")
             led.value(0)
             
         
