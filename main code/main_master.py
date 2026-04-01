@@ -80,6 +80,7 @@ while True:
         print("Master recived", data.decode('utf-8').strip())
         
         #Printing to lCD
+        lcd.clear()   # <-- put it here (only once)
         lcd.move_to(0, 0)
         lcd.putstr("Distance (cm)")
         
