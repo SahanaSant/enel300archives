@@ -74,28 +74,17 @@ while True:
     
     print("master ping")
     print(f"{act}\n")
-    uart2.write(f"{act}\n")
-    
-    
-    
-    #time.sleep(0.5)
-    
     if act == "press":
-        time.sleep(2.5)
+        uart2.write(f"{act}\n")
+        time.sleep(3.5)
         data = uart2.readline()
         data = data.decode('utf-8').strip()
         print("Master recieved, The distance in cm is ", data)
         time.sleep(8)
-        '''
-        #Printing to lCD
-        lcd.clear()   # <-- put it here (only once)
-        lcd.move_to(0, 0)
-        lcd.putstr("Distance (cm)")
         
-        lcd.move_to(0, 1)
-        lcd.putstr(str(data.decode('utf-8').strip()))
-        '''
-        
+    uart2.write(f"{act}\n")   
+    #time.sleep(0.5)
+       
     print("---")
     
     #time.sleep(1)
