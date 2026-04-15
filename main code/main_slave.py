@@ -22,7 +22,7 @@ motor_b_en.freq(1000)
 motor_b_correction = 1.0 # Adjust so both motors have same speed
 
 # === Ultrasonic Sensor ===
-d_sensor = HCSR04(trigger_pin=12, echo_pin=11)
+d_sensor = HCSR04(trigger_pin=6, echo_pin=7)
 
 
 # Function to control Motor A
@@ -54,11 +54,9 @@ def motor_b(direction = "stop", speed = 0):
     motor_b_en.duty_u16(int(adjusted_speed * 65535 / 100))  # Speed: 0-100%
     
 def get_distance(): #For Ultrasonic Sensor
-    
-    
     return d_sensor.distance_cm()
 
-def drive_from_command(com, speed=50):
+def drive_from_command(com, speed=70):
     if com == "left":
         motor_a("backward", speed)
         motor_b("forward", speed)
@@ -79,7 +77,7 @@ def drive_from_command(com, speed=50):
     return True
 
 while True:
-    
+
     if uart.any():
         data = uart.readline()
         if not data:
@@ -106,7 +104,6 @@ while True:
             print("fail")
     #Car battery works fine until calling getting output 
     
-            
     sleep(0.02)
 #     
 #     # Travel forward
@@ -122,7 +119,6 @@ while True:
 #     sleep(2.6)
 #     motor_a()
 #     motor_b()
-
 
 
 
